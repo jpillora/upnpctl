@@ -72,6 +72,9 @@ var add = command("add")
 var rem = command("rem")
 
 func main() {
+	flag.Usage = func() {
+		display(help)
+	}
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 0 {

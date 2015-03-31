@@ -39,37 +39,21 @@ $ upnpctl --help
 <tmpl,code: go run main.go --help>
 ```
 
-	Usage: dedup [options] <dir> [dir] [dir]
+	Usage: upnpctl <command> [options]
 	
 	Version: 0.0.0-src
 
-	deduplicates all files in the provided directories
-	by merging them together into the first directory.
-	The merge operation simultaneously removes duplicates
-	and renames files (when a path collision occurs).
-	
+	Commands:
+	  * list: discovers all available UPnP devices
+	  * add: adds a set of port mappings to a device
+	  * rem: removes a set of port mappings from a device
+
 	Options:
-	  --keep, keep duplicates (by default, duplicates
-	    are deleted)
-	  -v, verbose logs (display each move and delete)
-	  --version, display version
-	  -h --help, this help text
 
-	Notes:
-	  * dedup considers two files duplicates if they have
-	    matching sha1 sums
-	  * dedup is not recursive (only works on files)
-	  * dedup is a destructive operation (unless --keep)
-	  * dedup on a single directory will only perform
-	    deduplication, no moves
-	  * dedup renames: when a file is unique, dedup will
-	    attempt to move the file. if the path already
-	    exists the incoming file will be suffixed with
-	    the next number (for example, if 'foo.txt' exists,
-	    the new file will be 'foo-2.txt')
-	  * any error will cause dedup to exit
+	  -v, verbose logs
+	  -vv, very verbose logs
 
-	Read more: https://github.com/jpillora/dedup
+	Read more: https://github.com/jpillora/upnpctl
 
 ```
 </tmpl>
