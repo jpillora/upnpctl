@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -28,8 +29,13 @@ import (
 )
 
 // Debugging
-var debug = false
-var l = log.New(ioutil.Discard, "upnp: ", log.LstdFlags)
+var Debug = false
+
+var l = log.New(ioutil.Discard, "", 0)
+
+func EnableLog() {
+	l = log.New(os.Stdout, "upnp: ", log.LstdFlags)
+}
 
 // A container for relevant properties of a UPnP InternetGatewayDevice.
 type IGD struct {
@@ -110,7 +116,7 @@ func Discover() []IGD {
 	// InternetGatewayDevice:2 devices that correctly respond to the IGD:1 request as well will not be re-added to the result list
 	result = append(result, discover("urn:schemas-upnp-org:device:InternetGatewayDevice:1", timeout, result)...)
 
-	if len(result) > 0 && debug {
+	if len(result) > 0 && Debug {
 		l.Println("UPnP discovery result:")
 		for _, resultDevice := range result {
 			l.Println("[" + resultDevice.uuid + "]")
@@ -147,7 +153,7 @@ Mx: %d
 
 	search := []byte(strings.Replace(searchStr, "\n", "\r\n", -1))
 
-	if debug {
+	if Debug {
 		l.Println("Starting discovery of device type " + deviceType + "...")
 	}
 
@@ -167,7 +173,7 @@ Mx: %d
 		return results
 	}
 
-	if debug {
+	if Debug {
 		l.Println("Sending search request for device type " + deviceType + "...")
 	}
 
@@ -179,7 +185,7 @@ Mx: %d
 		return results
 	}
 
-	if debug {
+	if Debug {
 		l.Println("Listening for UPnP response for device type " + deviceType + "...")
 	}
 
@@ -209,7 +215,7 @@ Mx: %d
 		// Check for existing results (some routers send multiple response packets)
 		for _, existingResult := range results {
 			if existingResult.uuid == result.uuid {
-				if debug {
+				if Debug {
 					l.Println("Already processed device with UUID", existingResult.uuid, "continuing...")
 				}
 				continue
@@ -220,7 +226,7 @@ Mx: %d
 		results = append(results, result)
 	}
 
-	if debug {
+	if Debug {
 		l.Println("Discovery for device type " + deviceType + " finished.")
 	}
 
@@ -230,7 +236,7 @@ Mx: %d
 func handleSearchResponse(deviceType string, knownDevices []IGD, resp []byte, length int, resultChannel chan<- IGD, resultWaitGroup *sync.WaitGroup) {
 	defer resultWaitGroup.Done() // Signal when we've finished processing
 
-	if debug {
+	if Debug {
 		l.Println("Handling UPnP response:\n\n" + string(resp[:length]))
 	}
 
@@ -275,7 +281,7 @@ func handleSearchResponse(deviceType string, knownDevices []IGD, resp []byte, le
 	// Don't re-add devices that are already known
 	for _, knownDevice := range knownDevices {
 		if deviceUUID == knownDevice.uuid {
-			if debug {
+			if Debug {
 				l.Println("Ignoring known device with UUID " + deviceUUID)
 			}
 			return
@@ -327,7 +333,7 @@ func handleSearchResponse(deviceType string, knownDevices []IGD, resp []byte, le
 
 	resultChannel <- igd
 
-	if debug {
+	if Debug {
 		l.Println("Finished handling of UPnP response.")
 	}
 }
@@ -416,7 +422,7 @@ func getIGDServices(rootURL string, device upnpDevice, wanDeviceURN string, wanC
 			for _, serviceURN := range serviceURNs {
 				services := getChildServices(connection, serviceURN)
 
-				if len(services) < 1 && debug {
+				if len(services) < 1 && Debug {
 					l.Println("[" + rootURL + "] No services of type " + serviceURN + " found on connection.")
 				}
 
@@ -427,7 +433,7 @@ func getIGDServices(rootURL string, device upnpDevice, wanDeviceURN string, wanC
 						u, _ := url.Parse(rootURL)
 						replaceRawPath(u, service.ControlURL)
 
-						if debug {
+						if Debug {
 							l.Println("[" + rootURL + "] Found " + service.ServiceType + " with URL " + u.String())
 						}
 
@@ -488,7 +494,7 @@ func soapRequest(url, service, function, message string) ([]byte, error) {
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
-	if debug {
+	if Debug {
 		l.Println("SOAP Request URL: " + url)
 		l.Println("SOAP Action: " + req.Header.Get("SOAPAction"))
 		l.Println("SOAP Request:\n\n" + body)
@@ -500,7 +506,7 @@ func soapRequest(url, service, function, message string) ([]byte, error) {
 	}
 
 	resp, _ = ioutil.ReadAll(r.Body)
-	if debug {
+	if Debug {
 		l.Println("SOAP Response:\n\n" + string(resp) + "\n")
 	}
 

@@ -14,11 +14,14 @@ import (
 var VERSION string = "0.0.0-src" //set via ldflags
 
 var helpFooter = `
+	  -v, verbose logs
+	  -vv, very verbose logs
+
 	Read more: https://github.com/jpillora/upnpctl
 `
 
 var help = `
-	Usage: upnpctl <command>
+	Usage: upnpctl <command> [options]
 	
 	Version: ` + VERSION + `
 
@@ -26,6 +29,8 @@ var help = `
 	  * list: discovers all available UPnP devices
 	  * add: adds a set of port mappings to a device
 	  * rem: removes a set of port mappings from a device
+
+	Options:
 ` + helpFooter
 
 var helpAdd = `
@@ -58,7 +63,6 @@ var helpRem = `
 	Options:
 	  --id, the device id. required	when more than one
 	  device is found.
-
 ` + helpFooter
 
 type command string
@@ -95,12 +99,23 @@ func main() {
 	}
 
 	f := flag.NewFlagSet(string(cmd), flag.ExitOnError)
-
+	v := f.Bool("v", false, "")
+	vv := f.Bool("vv", false, "")
 	id := f.String("id", "", "")
 	tf := f.String("type", "tcp", "")
 	timeoutf := f.Duration("timeout", 0, "")
 	desc := f.String("desc", "upnpctl v"+VERSION, "")
+	//parse and transform args
 	f.Parse(args)
+
+	if *vv {
+		*v = true
+		upnp.Debug = true
+	}
+	if *v {
+		upnp.EnableLog()
+	}
+
 	args = f.Args()
 
 	timeout := int((*timeoutf).Seconds())

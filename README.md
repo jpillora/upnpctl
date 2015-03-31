@@ -16,6 +16,64 @@ See [latest release](https://github.com/jpillora/upnpctl/releases/latest)
 $ go get -v github.com/jpillora/upnpctl
 ```
 
+### Examples
+
+Forward the router's port 3000 to this machine's port 3000
+
+```
+upnpctl add 3000
+```
+
+Forward the router's port 4000 to this machine's port 5000
+
+```
+upnpctl add 4000:5000
+```
+
+### Usage
+
+```
+$ upnpctl --help
+```
+
+<tmpl,code: go run main.go --help>
+```
+
+	Usage: dedup [options] <dir> [dir] [dir]
+	
+	Version: 0.0.0-src
+
+	deduplicates all files in the provided directories
+	by merging them together into the first directory.
+	The merge operation simultaneously removes duplicates
+	and renames files (when a path collision occurs).
+	
+	Options:
+	  --keep, keep duplicates (by default, duplicates
+	    are deleted)
+	  -v, verbose logs (display each move and delete)
+	  --version, display version
+	  -h --help, this help text
+
+	Notes:
+	  * dedup considers two files duplicates if they have
+	    matching sha1 sums
+	  * dedup is not recursive (only works on files)
+	  * dedup is a destructive operation (unless --keep)
+	  * dedup on a single directory will only perform
+	    deduplication, no moves
+	  * dedup renames: when a file is unique, dedup will
+	    attempt to move the file. if the path already
+	    exists the incoming file will be suffixed with
+	    the next number (for example, if 'foo.txt' exists,
+	    the new file will be 'foo-2.txt')
+	  * any error will cause dedup to exit
+
+	Read more: https://github.com/jpillora/dedup
+
+```
+</tmpl>
+
 #### MIT License
 
 Copyright © 2015 Jaime Pillora &lt;dev@jpillora.com&gt;
