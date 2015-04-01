@@ -15,7 +15,6 @@ var VERSION string = "0.0.0-src" //set via ldflags
 
 var helpFooter = `
 	  -v, verbose logs
-	  -vv, very verbose logs
 
 	Read more: https://github.com/jpillora/upnpctl
 `
@@ -31,6 +30,7 @@ var help = `
 	  * rem: removes a set of port mappings from a device
 
 	Options:
+	  --help, display help text
 ` + helpFooter
 
 var helpAdd = `
@@ -103,7 +103,6 @@ func main() {
 
 	f := flag.NewFlagSet(string(cmd), flag.ExitOnError)
 	v := f.Bool("v", false, "")
-	vv := f.Bool("vv", false, "")
 	id := f.String("id", "", "")
 	tf := f.String("type", "tcp", "")
 	timeoutf := f.Duration("timeout", 0, "")
@@ -111,11 +110,8 @@ func main() {
 	//parse and transform args
 	f.Parse(args)
 
-	if *vv {
-		*v = true
-		upnp.Debug = true
-	}
 	if *v {
+		upnp.Debug = true
 		upnp.EnableLog()
 	}
 
@@ -220,7 +216,7 @@ func discover() clients {
 	for _, igd := range igds {
 		ip, _, _ := net.SplitHostPort(igd.URL().Host)
 		id := strings.ToLower(strings.Split(igd.UUID(), "-")[0])
-		cs = append(cs, &client{&igd, igd.FriendlyName(), ip, id})
+		cs = append(cs, &client{igd, igd.FriendlyName(), ip, id})
 	}
 	return cs
 }
@@ -255,7 +251,7 @@ func (m *mapping) unmarshal(s string) error {
 type clients []*client
 
 type client struct {
-	igd          *upnp.IGD
+	igd          upnp.IGD
 	name, ip, id string
 }
 
