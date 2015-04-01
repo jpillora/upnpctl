@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"net"
@@ -11,7 +13,7 @@ import (
 	"github.com/jpillora/upnpctl/upnp" //vendored
 )
 
-var VERSION string = "0.0.0-src" //set via ldflags
+var VERSION string = "0.0.0" //set via ldflags
 
 var helpFooter = `
 	  -v, verbose logs
@@ -20,7 +22,7 @@ var helpFooter = `
 `
 
 var help = `
-	Usage: upnpctl <command> [options]
+	Usage: upnpctl [-v] <command>
 	
 	Version: ` + VERSION + `
 
@@ -29,12 +31,10 @@ var help = `
 	  * add: adds a set of port mappings to a device
 	  * rem: removes a set of port mappings from a device
 
-	Options:
-	  --help, display help text
 ` + helpFooter
 
 var helpAdd = `
-	Usage: upnpctl add [options] [mapping]...
+	Usage: upnpctl [-v] add [options] [mapping]...
 
 	a [mapping] is an external port and optional internal
 	port, which comes in the form "external[:internal}".
@@ -47,14 +47,15 @@ var helpAdd = `
 
 	  --type, port type: tcp or udp (defaults to 'tcp')
 
-	  --timeout, port mapping timeout (defaults to unlimited)
+	  --timeout, port mapping timeout (defaults to permanent)
 
-	  --desc, port mapping description. displayed along-
-	  side port mappings (defaults to 'upnpctl v` + VERSION + `')
+	  --desc, port mapping description; some routers
+	  display this description along-side port mappings
+	  (defaults to 'upnpctl v` + VERSION + `')
 ` + helpFooter
 
 var helpRem = `
-	Usage: upnpctl rem [options] [external]...
+	Usage: upnpctl [-v] rem [options] [external]...
 
 	a [external] is the external port identifying a port
 	mapping to remove. you may specify any number of
@@ -72,10 +73,15 @@ var add = command("add")
 var rem = command("rem")
 
 func main() {
+	v := flag.Bool("v", false, "")
 	flag.Usage = func() {
 		display(help)
 	}
 	flag.Parse()
+	if *v {
+		upnp.Debug = true
+		upnp.EnableLog()
+	}
 	args := flag.Args()
 	if len(args) == 0 {
 		display(help)
@@ -102,18 +108,12 @@ func main() {
 	}
 
 	f := flag.NewFlagSet(string(cmd), flag.ExitOnError)
-	v := f.Bool("v", false, "")
 	id := f.String("id", "", "")
 	tf := f.String("type", "tcp", "")
 	timeoutf := f.Duration("timeout", 0, "")
 	desc := f.String("desc", "upnpctl v"+VERSION, "")
 	//parse and transform args
 	f.Parse(args)
-
-	if *v {
-		upnp.Debug = true
-		upnp.EnableLog()
-	}
 
 	args = f.Args()
 
@@ -198,7 +198,7 @@ func main() {
 }
 
 func listMappings() {
-	fmt.Printf("Listing UPnP devices...\n")
+	fmt.Printf("Discovering UPnP devices...\n")
 	cs := discover()
 	for _, c := range cs {
 		fmt.Printf("  #%s: %s (%s)\n", c.id, c.name, c.ip)
@@ -214,8 +214,13 @@ func discover() clients {
 	cs := make(clients, 0)
 	igds := upnp.Discover()
 	for _, igd := range igds {
-		ip, _, _ := net.SplitHostPort(igd.URL().Host)
-		id := strings.ToLower(strings.Split(igd.UUID(), "-")[0])
+		host := igd.URL().Host
+		ip, _, _ := net.SplitHostPort(host)
+		h := sha1.New()
+		h.Write([]byte(igd.UUID()))
+		h.Write([]byte(host))
+		hex := hex.EncodeToString(h.Sum(nil))
+		id := hex[0:5] //only use first 5 chars (of 40)
 		cs = append(cs, &client{igd, igd.FriendlyName(), ip, id})
 	}
 	return cs
